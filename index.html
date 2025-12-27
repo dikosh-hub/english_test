@@ -30,15 +30,15 @@
             margin: 0;
             display: flex;
             justify-content: center;
-            min-height: 100vh;
+            height: 100vh; /* Фикс для Safari mobile */
+            overflow: hidden; /* Чтобы скролился только контейнер */
             padding: 15px;
-            /* Фикс для iPhone низа */
             padding-bottom: env(safe-area-inset-bottom);
         }
 
         .container {
             width: 100%;
-            max-width: 600px; /* Узкий контейнер для вида "как приложение" */
+            max-width: 600px;
             background: var(--surface);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
@@ -46,8 +46,7 @@
             flex-direction: column;
             overflow: hidden;
             position: relative;
-            height: fit-content;
-            min-height: 80vh; /* Растягиваем почти на весь экран */
+            height: 100%; /* На всю доступную высоту */
         }
 
         /* Screens */
@@ -57,6 +56,7 @@
             padding: 1.5rem;
             animation: fadeIn 0.3s ease-out;
             height: 100%;
+            overflow: hidden; /* Важно для внутреннего скролла */
         }
         .screen.active { display: flex; }
         
@@ -65,14 +65,18 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        h1, h2 { text-align: center; margin: 0 0 20px 0; font-size: 1.6rem; }
+        h1, h2 { text-align: center; margin: 0; font-size: 1.5rem; color: var(--text-dark); }
 
         /* --- 1. MENU --- */
-        .menu-grid {
+        /* Скроллится само меню внутри экрана */
+        #menu-root {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-bottom: 20px;
+            padding-top: 10px;
             display: flex;
             flex-direction: column;
             gap: 12px;
-            padding-bottom: 20px;
         }
 
         .menu-card {
@@ -83,6 +87,7 @@
             cursor: pointer;
             transition: transform 0.1s, background 0.1s;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            flex-shrink: 0; /* Не сжимать плитки */
         }
         .menu-card:active { transform: scale(0.98); background: #f8fafc; }
         
@@ -98,7 +103,6 @@
 
         /* --- 2. QUIZ UI --- */
         
-        /* Верхняя панель с кнопками управления */
         .header-nav {
             display: flex;
             justify-content: space-between;
@@ -106,32 +110,39 @@
             margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0; /* Фиксация заголовка */
         }
 
         .btn-icon {
             background: transparent;
             border: none;
-            font-size: 1.5rem; /* Иконки крупно */
-            padding: 5px 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+            padding: 8px 12px;
             cursor: pointer;
             border-radius: 8px;
+            background: #eff6ff;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-        .btn-icon:active { background: #f1f5f9; }
+        .btn-icon:active { background: #dbeafe; }
 
         .subject-badge {
             font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-light);
+            font-weight: 700;
+            color: var(--text-dark);
             text-transform: uppercase;
             text-align: center;
-            max-width: 60%;
+            max-width: 50%;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        /* Прогресс бар */
-        .progress-block { margin-bottom: 20px; }
+        /* Progress Bar */
+        .progress-block { margin-bottom: 20px; flex-shrink: 0; }
         .counter-label { 
             text-align: center; 
             font-size: 0.9rem; 
@@ -142,8 +153,14 @@
         .track { height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
         .fill { height: 100%; background: var(--primary); width: 0; transition: width 0.3s; }
 
-        /* Вопрос */
-        .q-area { flex-grow: 1; display: flex; flex-direction: column; }
+        /* Question Area - Скролл здесь */
+        .q-area { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto; 
+            margin-bottom: 10px;
+        }
         
         .question-text {
             font-size: 1.25rem;
@@ -153,7 +170,6 @@
             color: var(--text-dark);
         }
 
-        /* Ответы */
         .options-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 
         .option {
@@ -180,7 +196,7 @@
             border: 2px solid #cbd5e1;
             border-radius: 50%;
             margin-right: 12px;
-            margin-top: 1px; /* Выравнивание с первой строкой текста */
+            margin-top: 1px;
             display: flex; 
             align-items: center; justify-content: center;
         }
@@ -189,15 +205,18 @@
         .option.selected .circle { border-color: var(--primary); }
         .option.selected .circle::after { background: var(--primary); }
 
-        /* Подвал (Кнопки Назад/Далее) */
+        /* Footer */
         .footer {
             margin-top: auto;
             display: flex;
             gap: 15px;
+            flex-shrink: 0;
+            padding-top: 10px;
+            border-top: 1px solid #f1f5f9;
         }
 
         .btn-nav {
-            flex: 1; /* Растянуть на всю ширину */
+            flex: 1;
             padding: 15px;
             border: none;
             border-radius: 12px;
@@ -216,22 +235,36 @@
 
         .btn-nav.finish { background: #0f172a; color: white; }
 
-        /* --- 3. RESULTS --- */
+        /* --- 3. RESULTS UI --- */
+        /* Хедер результата (фиксированный) */
+        .res-header-fixed {
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
         .score-box {
+            flex-shrink: 0; /* Не сжимается */
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             background: #f8fafc;
             border-radius: 16px;
             margin-bottom: 20px;
         }
-        .score-val { font-size: 3.5rem; font-weight: 800; color: var(--primary); line-height: 1; margin-bottom: 10px; }
+        .score-val { font-size: 3rem; font-weight: 800; color: var(--primary); line-height: 1; margin-bottom: 5px; }
         
+        /* Логи ответов (Скроллятся) */
         .review-box {
             flex-grow: 1;
             overflow-y: auto;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 10px;
+            margin-bottom: 10px;
         }
         
         .review-item { 
@@ -242,9 +275,6 @@
         .review-item.good { background: #f0fdf4; border-left: 4px solid var(--green); }
         .review-item.bad { background: #fef2f2; border-left: 4px solid var(--red); }
 
-        /* Иконки кнопок в тексте */
-        .btn-text { margin-top: 15px; width: 100%; padding: 15px; }
-
     </style>
 </head>
 <body>
@@ -253,17 +283,17 @@
     
     <!-- MENU SCREEN -->
     <div id="scr-home" class="screen active">
-        <h1>Студенческие Тесты</h1>
-        <div class="menu-grid" id="menu-root"></div>
+        <h1 style="margin-bottom: 20px;">Студенческие Тесты</h1>
+        <div id="menu-root"></div>
     </div>
 
     <!-- QUIZ SCREEN -->
     <div id="scr-quiz" class="screen">
         <!-- Навигация: Домой и Флаг сдачи -->
         <div class="header-nav">
-            <button class="btn-icon" onclick="App.goHomeSafe()" title="В меню">🏠</button>
+            <button class="btn-icon" onclick="App.goHomeSafe()">🏠 Меню</button>
             <span class="subject-badge" id="subj-name">...</span>
-            <button class="btn-icon" id="btn-giveup" onclick="App.finishEarly()" title="Завершить досрочно" style="color: #ef4444;">🏳</button>
+            <button class="btn-icon" id="btn-giveup" onclick="App.finishEarly()" style="color: #ef4444; background: #fef2f2;">🏳 Сдаться</button>
         </div>
 
         <!-- Прогресс -->
@@ -272,31 +302,36 @@
             <div class="track"><div class="fill" id="fill-bar"></div></div>
         </div>
 
+        <!-- Скроллящаяся зона вопроса -->
         <div class="q-area">
             <div class="question-text" id="q-text">Loading...</div>
             <div class="options-list" id="opt-root"></div>
         </div>
 
-        <!-- Большие кнопки внизу -->
+        <!-- Большие кнопки внизу (всегда на месте) -->
         <div class="footer">
             <button class="btn-nav prev" id="btn-prev" onclick="App.prev()">⬅ Назад</button>
             <button class="btn-nav next" id="btn-next" onclick="App.next()">Далее ➡</button>
-            <button class="btn-nav finish" id="btn-finish" onclick="App.finish()" style="display:none">✅ Финиш</button>
+            <button class="btn-nav finish" id="btn-finish" onclick="App.finish()" style="display:none">✅ Итоги</button>
         </div>
     </div>
 
     <!-- RESULTS SCREEN -->
     <div id="scr-res" class="screen">
-        <h2>Итоги Теста</h2>
         
+        <!-- Верхняя фиксированная панель -->
+        <div class="res-header-fixed">
+            <button class="btn-icon" onclick="App.goHome()">🏠 В меню</button>
+            <h2>Итоги</h2>
+            <div style="width: 70px;"></div> <!-- Пустышка для центровки заголовка -->
+        </div>
+
         <div class="score-box">
             <div class="score-val" id="res-score">0%</div>
             <div id="res-text">0/0 верно</div>
         </div>
 
         <div class="review-box" id="res-log"></div>
-
-        <button class="btn-nav next btn-text" onclick="App.goHome()">Вернуться в меню</button>
     </div>
 
 </div>
@@ -323,7 +358,7 @@
             // MIX button
             const mix = document.createElement('div');
             mix.className = 'menu-card mix';
-            mix.innerHTML = `<h3>🔀 Общий Тест (Mix)</h3><div class="stat-text">Все вопросы</div>`;
+            mix.innerHTML = `<h3>🔀 Общий Тест (Mix)</h3><div class="stat-text">Все вопросы вперемешку</div>`;
             mix.onclick = () => this.start('mix');
             root.appendChild(mix);
 
@@ -349,7 +384,6 @@
             if(key === 'mix') Object.values(QUESTIONS_DB).forEach(d => qList.push(...d.data));
             else qList = QUESTIONS_DB[key].data;
 
-            // Deep copy and shuffle options
             this.data = this.shuffle(qList).map((qItem, i) => {
                 const opts = qItem.a.map((txt, idx) => ({ txt, correct: idx===0 }));
                 return {
@@ -367,15 +401,12 @@
             const item = this.data[this.cursor];
             const tot = this.data.length;
 
-            // Header
             document.getElementById('subj-name').innerText = this.activeKey === 'mix' ? "MIX TEST" : QUESTIONS_DB[this.activeKey].title;
             document.getElementById('counter').innerText = `${this.cursor+1} / ${tot}`;
             document.getElementById('fill-bar').style.width = `${((this.cursor+1)/tot)*100}%`;
 
-            // Question
             document.getElementById('q-text').innerText = item.q;
 
-            // Options
             const list = document.getElementById('opt-root');
             list.innerHTML = '';
             item.opts.forEach((o, idx) => {
@@ -386,19 +417,16 @@
                 row.innerHTML = `<div class="circle"></div><div>${o.txt}</div>`;
                 row.onclick = () => {
                     this.answers[this.cursor] = idx;
-                    this.renderQ(); // redraw to show selection
+                    this.renderQ(); 
                 };
                 list.appendChild(row);
             });
 
-            // Footer logic
             const isLast = this.cursor === tot - 1;
             document.getElementById('btn-prev').style.visibility = this.cursor === 0 ? 'hidden' : 'visible';
             document.getElementById('btn-next').style.display = isLast ? 'none' : 'flex';
             document.getElementById('btn-finish').style.display = isLast ? 'flex' : 'none';
-            
-            // Hide early finish button if on last slide
-            document.getElementById('btn-giveup').style.display = isLast ? 'none' : 'block';
+            document.getElementById('btn-giveup').style.display = isLast ? 'none' : 'flex';
         },
 
         next() { if(this.cursor < this.data.length-1) { this.cursor++; this.renderQ(); } },
@@ -413,7 +441,7 @@
 
         finishEarly() {
             const left = this.data.length - Object.keys(this.answers).length;
-            if(confirm(`Осталось вопросов: ${left}. \nЗавершить сейчас? Неотвеченные будут ошибками.`)) {
+            if(confirm(`Осталось вопросов: ${left}. \nЗавершить сейчас?`)) {
                 this.finish();
             }
         },
@@ -426,7 +454,7 @@
             this.data.forEach((item, i) => {
                 const uIdx = this.answers[i];
                 let isRight = false;
-                let uTxt = "—";
+                let uTxt = "Нет ответа";
                 
                 if(uIdx !== undefined) {
                     uTxt = item.opts[uIdx].txt;
@@ -449,13 +477,11 @@
 
             const pct = Math.round((ok / this.data.length)*100);
             
-            // UI Color
             const scEl = document.getElementById('res-score');
             scEl.innerText = pct + '%';
             scEl.style.color = pct >= 80 ? 'var(--green)' : (pct >= 50 ? '#eab308' : 'var(--red)');
-            document.getElementById('res-text').innerText = `${ok} / ${this.data.length}`;
+            document.getElementById('res-text').innerText = `${ok} / ${this.data.length} верно`;
 
-            // Save
             if(this.activeKey !== 'mix') {
                 const h = JSON.parse(localStorage.getItem('qz_history')) || {};
                 if(pct > (h[this.activeKey]||0)) {
@@ -475,7 +501,10 @@
         showScr(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            window.scrollTo(0,0);
+            // Принудительно возвращаем скролл вверх для лога ответов
+            if(id === 'scr-res') {
+                document.getElementById('res-log').scrollTop = 0;
+            }
         }
     };
 
