@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Экзаменационное Тестирование</title>
+    
+    <!-- ПОДКЛЮЧЕНИЕ ВОПРОСОВ -->
+    <script src="data.js"></script>
+
+    <style>
+        :root {
+            --primary: #3b82f6; 
+            --primary-dark: #2563eb;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-dark: #1e293b;
+            --green: #10b981;
+            --red: #ef4444;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: var(--background);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: fit-content;
+            min-height: 500px;
+            position: relative;
+        }
+
+        /* --- Screens --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            padding: 2rem;
+            animation: fadeIn 0.4s ease;
+        }
+        .screen.active { display: flex; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2 { text-align: center; margin-bottom: 20px; }
+
+        /* --- Меню --- */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .menu-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            padding: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .menu-card:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .menu-card.mix {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            grid-column: 1 / -1;
+            border: none;
+        }
+
+        .stat-text {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 5px;
+            display: block;
+        }
+
+        /* --- Тест UI --- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 500;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option {
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .option:hover { background: #f8fafc; border-color: #cbd5e1; }
+        
+        .option.selected {
+            background: #eff6ff;
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+        
+        .option-marker {
+            width: 20px; height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: grid;
+            place-items: center;
+        }
+        
+        .option.selected .option-marker {
+            border-color: var(--primary);
+            background: var(--primary);
+        }
+
+        /* Buttons Footer */
+        .footer-buttons {
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        
+        .btn-prev { background: #f1f5f9; color: #475569; }
+        .btn-prev:hover { background: #e2e8f0; }
+
+        .btn-next { background: var(--primary); color: white; min-width: 100px;}
+        .btn-next:hover { background: var(--primary-dark); }
+        
+        .btn-finish { background: #1e293b; color: white; min-width: 100px; }
+        .btn-finish:hover { background: black; }
+
+        /* Кнопка "Сдаться / Досрочно" */
+        .btn-early {
+            background: transparent;
+            border: 2px solid #fee2e2;
+            color: #ef4444;
+            font-size: 0.9rem;
+            padding: 10px 15px;
+        }
+        .btn-early:hover {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        /* --- Результаты --- */
+        .score-box {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: var(--radius);
+        }
+        .score-number { font-size: 3rem; font-weight: 800; color: var(--primary); line-height: 1; }
+
+        .result-logs {
+            overflow-y: auto;
+            max-height: 400px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .log-item {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.95rem;
+        }
+        .log-item.ok { border-left: 6px solid var(--green); }
+        .log-item.err { border-left: 6px solid var(--red); }
+        
+        .log-correct-ans { color: var(--green); font-weight: 600; margin-top: 4px; }
+        .log-wrong-ans { color: var(--red); text-decoration: line-through; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- 1. ГЛАВНОЕ МЕНЮ -->
+    <div id="screen-home" class="screen active">
+        <h1>Выберите Экзамен</h1>
+        <div class="menu-grid" id="menu-area"></div>
+    </div>
+
+    <!-- 2. ЭКРАН ТЕСТИРОВАНИЯ -->
+    <div id="screen-quiz" class="screen">
+        <div class="top-bar">
+            <span id="subject-label">Subject</span>
+            <span id="counter-label">1/10</span>
+        </div>
+        <div class="progress-container"><div id="progress-line" class="progress-fill"></div></div>
+
+        <div class="question-text" id="q-text">Вопрос...</div>
+        <div class="options-list" id="opts-area"></div>
+
+        <div class="footer-buttons">
+            <button class="btn btn-prev" onclick="Quiz.prev()">⬅ Назад</button>
+            
+            <!-- КНОПКА ДОСРОЧНОГО ЗАВЕРШЕНИЯ -->
+            <button class="btn btn-early" id="btn-early-finish" onclick="Quiz.tryFinishEarly()">
+                ⚐ Завершить досрочно
+            </button>
+
+            <button class="btn btn-next" id="btn-next" onclick="Quiz.next()">Далее ➡</button>
+            <button class="btn btn-finish" id="btn-end" style="display:none" onclick="Quiz.finish()">Завершить ✅</button>
+        </div>
+    </div>
+
+    <!-- 3. ЭКРАН РЕЗУЛЬТАТОВ -->
+    <div id="screen-result" class="screen">
+        <h2>Результаты</h2>
+        <div class="score-box">
+            <div class="score-number" id="final-percent">0%</div>
+            <div id="final-text">0 из 0 верно</div>
+        </div>
+        
+        <div class="result-logs" id="result-logs"></div>
+
+        <button class="btn btn-next" style="margin-top: 20px; width:100%" onclick="Quiz.goHome()">Вернуться в меню</button>
+    </div>
+</div>
+
+<script>
+    const Quiz = {
+        data: [],        // Список вопросов
+        cursor: 0,       // Текущий индекс вопроса
+        answers: {},     // Ответы пользователя { id: index }
+        activeSubj: '',  
+        
+        init() {
+            if(typeof QUESTIONS_DB === 'undefined') {
+                alert('Ошибка! Файл data.js не подключен.');
+                return;
+            }
+            this.renderMenu();
+        },
+
+        shuffle(arr) {
+            return arr.map(val => ({val, sort: Math.random()}))
+                      .sort((a,b) => a.sort - b.sort)
+                      .map(({val}) => val);
+        },
+
+        renderMenu() {
+            const menu = document.getElementById('menu-area');
+            menu.innerHTML = '';
+
+            const btnMix = document.createElement('div');
+            btnMix.className = 'menu-card mix';
+            btnMix.innerHTML = `<h3>🔀 Общий Тест (Все темы)</h3><div>Вопросы из всех дисциплин вперемешку</div>`;
+            btnMix.onclick = () => this.start('mix');
+            menu.appendChild(btnMix);
+
+            const history = JSON.parse(localStorage.getItem('quiz_history')) || {};
+            
+            Object.keys(QUESTIONS_DB).forEach(key => {
+                const item = QUESTIONS_DB[key];
+                const score = history[key] || 0;
+                
+                const card = document.createElement('div');
+                card.className = 'menu-card';
+                card.innerHTML = `
+                    <h3>${item.title.split('(')[0]}</h3>
+                    <span class="stat-text">Лучший результат: ${score}%</span>
+                `;
+                card.onclick = () => this.start(key);
+                menu.appendChild(card);
+            });
+        },
+
+        start(key) {
+            this.activeSubj = key;
+            this.cursor = 0;
+            this.answers = {};
+
+            let rawQ = [];
+            if(key === 'mix') {
+                Object.values(QUESTIONS_DB).forEach(s => rawQ.push(...s.data));
+            } else {
+                rawQ = QUESTIONS_DB[key].data;
+            }
+
+            // Перемешивание вопросов и вариантов ответов
+            this.data = this.shuffle(rawQ).map((q, idx) => {
+                const variantsWithIndex = q.a.map((txt, i) => ({ text: txt, isRight: i === 0 }));
+                return {
+                    id: idx,
+                    question: q.q,
+                    options: this.shuffle(variantsWithIndex)
+                };
+            });
+
+            this.switchScreen('screen-quiz');
+            this.renderQuestion();
+        },
+
+        renderQuestion() {
+            const item = this.data[this.cursor];
+            const total = this.data.length;
+
+            const title = this.activeSubj === 'mix' ? "Общий экзамен" : QUESTIONS_DB[this.activeSubj].title;
+            document.getElementById('subject-label').innerText = title;
+            document.getElementById('counter-label').innerText = `${this.cursor + 1} / ${total}`;
+            document.getElementById('progress-line').style.width = `${((this.cursor+1)/total)*100}%`;
+            
+            document.getElementById('q-text').innerText = item.question;
+
+            const area = document.getElementById('opts-area');
+            area.innerHTML = '';
+
+            item.options.forEach((opt, idx) => {
+                const row = document.createElement('div');
+                row.className = 'option';
+                
+                if(this.answers[this.cursor] === idx) {
+                    row.classList.add('selected');
+                }
+
+                row.innerHTML = `<div class="option-marker"></div><span>${opt.text}</span>`;
+                row.onclick = () => {
+                    this.answers[this.cursor] = idx;
+                    this.renderQuestion();
+                };
+                area.appendChild(row);
+            });
+
+            // Управление кнопками
+            const isLast = this.cursor === total - 1;
+            document.getElementById('btn-next').style.display = isLast ? 'none' : 'block';
+            document.getElementById('btn-end').style.display = isLast ? 'block' : 'none';
+            
+            // Скрываем кнопку "Досрочно" на последнем вопросе, чтобы не дублировать кнопки
+            document.getElementById('btn-early-finish').style.display = isLast ? 'none' : 'block';
+        },
+
+        next() {
+            if(this.cursor < this.data.length - 1) {
+                this.cursor++;
+                this.renderQuestion();
+            }
+        },
+
+        prev() {
+            if(this.cursor > 0) {
+                this.cursor--;
+                this.renderQuestion();
+            }
+        },
+
+        // --- ЛОГИКА ДОСРОЧНОГО ЗАВЕРШЕНИЯ ---
+        tryFinishEarly() {
+            // Подсчет ответов
+            const answeredCount = Object.keys(this.answers).length;
+            const total = this.data.length;
+            const left = total - answeredCount;
+
+            const msg = left > 0 
+                ? `Вы ответили только на ${answeredCount} из ${total} вопросов.\n\nВы уверены, что хотите завершить? Оставшиеся вопросы будут помечены как ошибки.`
+                : `Вы ответили на все вопросы. Завершить тест сейчас?`;
+
+            if(confirm(msg)) {
+                this.finish();
+            }
+        },
+
+        finish() {
+            let correct = 0;
+            const logArea = document.getElementById('result-logs');
+            logArea.innerHTML = '';
+
+            this.data.forEach((item, idx) => {
+                const userPickIdx = this.answers[idx];
+                const variants = item.options;
+                
+                let isRight = false;
+                let userText = "Нет ответа"; // Если пропустил (досрочно завершил)
+                
+                if(userPickIdx !== undefined) {
+                    if(variants[userPickIdx].isRight) {
+                        isRight = true;
+                        correct++;
+                    }
+                    userText = variants[userPickIdx].text;
+                }
+
+                const correctText = variants.find(v => v.isRight).text;
+
+                const div = document.createElement('div');
+                div.className = `log-item ${isRight ? 'ok' : 'err'}`;
+                
+                let html = `<strong>${idx + 1}. ${item.question}</strong><br>`;
+                if(isRight) {
+                    html += `<div class="log-correct-ans">✅ Ваш ответ: ${userText}</div>`;
+                } else {
+                    html += `<div class="log-wrong-ans">❌ Ваш ответ: ${userText}</div>`;
+                    html += `<div class="log-correct-ans">Правильно: ${correctText}</div>`;
+                }
+                div.innerHTML = html;
+                logArea.appendChild(div);
+            });
+
+            const percent = Math.round((correct / this.data.length) * 100);
+            
+            const resultElement = document.getElementById('final-percent');
+            resultElement.innerText = percent + '%';
+            
+            // Цвет результата
+            if(percent >= 90) resultElement.style.color = 'var(--green)';
+            else if(percent >= 50) resultElement.style.color = '#eab308'; // Желтый
+            else resultElement.style.color = 'var(--red)';
+
+            document.getElementById('final-text').innerText = `${correct} из ${this.data.length} верно`;
+
+            // Сохраняем в localStorage (если это не Mix режим)
+            if(this.activeSubj !== 'mix') {
+                const history = JSON.parse(localStorage.getItem('quiz_history')) || {};
+                const old = history[this.activeSubj] || 0;
+                // Сохраняем, только если результат лучше предыдущего
+                if(percent > old) {
+                    history[this.activeSubj] = percent;
+                    localStorage.setItem('quiz_history', JSON.stringify(history));
+                }
+            }
+
+            this.switchScreen('screen-result');
+        },
+
+        goHome() {
+            this.init();
+            this.switchScreen('screen-home');
+        },
+
+        switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+    };
+
+    // Старт
+    Quiz.init();
+</script>
+
+</body>
+</html>
