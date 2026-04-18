@@ -1,77 +1,199 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <!-- (Стили остаются те же, добавляю пару новых для кнопки продолжения) -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Экзаменационное Тестирование</title>
     <script src="data.js"></script>
     <style>
-        /* ... (весь предыдущий CSS) ... */
         :root {
-            --primary: #3b82f6; --primary-dark: #2563eb; --background: #f1f5f9;
+            --primary: #3b82f6; --primary-dark: #2563eb; 
+            --secondary: #8b5cf6; --secondary-dark: #7c3aed;
+            --background: #f8fafc;
             --surface: #ffffff; --text-dark: #0f172a; --text-light: #64748b;
-            --green: #10b981; --red: #ef4444; --shadow: 0 4px 15px -3px rgb(0 0 0 / 0.1); --radius: 16px;
+            --green: #10b981; --red: #ef4444; 
+            --shadow-sm: 0 2px 4px rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-hover: 0 12px 20px -5px rgb(0 0 0 / 0.15);
+            --radius: 20px;
         }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--background); color: var(--text-dark); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; padding: 15px; padding-bottom: env(safe-area-inset-bottom); }
-        .container { width: 100%; max-width: 600px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
-        .screen { display: none; flex-direction: column; padding: 1.5rem; animation: fadeIn 0.3s ease-out; height: 100%; overflow: hidden; }
-        .screen.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        h1, h2 { text-align: center; margin: 0; font-size: 1.5rem; color: var(--text-dark); }
-        #menu-root { overflow-y: auto; flex-grow: 1; padding-bottom: 20px; padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
-        .menu-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; cursor: pointer; transition: transform 0.1s, background 0.1s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-shrink: 0; }
-        .menu-card:active { transform: scale(0.98); background: #f8fafc; }
-        .menu-card h3 { margin: 0 0 5px 0; font-size: 1.1rem; }
-        .stat-text { font-size: 0.9rem; color: var(--text-light); }
-        .menu-card.mix { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; border: none; }
-        .menu-card.resume { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; }
-        .header-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; flex-shrink: 0; }
-        .btn-icon { background: #eff6ff; border: none; font-size: 1rem; font-weight: 600; color: var(--primary); padding: 8px 12px; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 5px; }
-        .subject-badge { font-size: 0.9rem; font-weight: 700; color: var(--text-dark); text-align: center; max-width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .progress-block { margin-bottom: 20px; flex-shrink: 0; }
-        .counter-label { text-align: center; font-size: 0.9rem; color: var(--text-light); margin-bottom: 5px; }
-        .track { height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
-        .fill { height: 100%; background: var(--primary); width: 0; transition: width 0.3s; }
-        .q-area { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; margin-bottom: 10px; }
-        .question-text { font-size: 1.25rem; font-weight: 600; line-height: 1.4; margin-bottom: 25px; }
-        .options-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-        .option { padding: 16px; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-size: 1rem; display: flex; align-items: flex-start; }
-        .option.selected { background: #eff6ff; border-color: var(--primary); color: var(--primary-dark); }
-        .circle { min-width: 22px; height: 22px; border: 2px solid #cbd5e1; border-radius: 50%; margin-right: 12px; display: flex; align-items: center; justify-content: center; }
-        .option.selected .circle { border-color: var(--primary); }
-        .option.selected .circle::after { content: ''; width: 12px; height: 12px; background: var(--primary); border-radius: 50%; }
-        .footer { margin-top: auto; display: flex; gap: 15px; flex-shrink: 0; padding-top: 10px; border-top: 1px solid #f1f5f9; }
-        .btn-nav { flex: 1; padding: 15px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-nav.prev { background: #e2e8f0; color: #475569; }
-        .btn-nav.next { background: var(--primary); color: white; }
-        .btn-nav.finish { background: #0f172a; color: white; }
-        .res-header-fixed { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
-        .score-box { text-align: center; padding: 20px; background: #f8fafc; border-radius: 16px; margin: 15px 0; }
-        .score-val { font-size: 3rem; font-weight: 800; color: var(--primary); }
-        .review-box { flex-grow: 1; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; }
-        .review-item { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
-        .review-item.good { background: #f0fdf4; border-left: 4px solid var(--green); }
-        .review-item.bad { background: #fef2f2; border-left: 4px solid var(--red); }
         
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: var(--text-dark); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden; 
+            padding: 15px; 
+            padding-bottom: env(safe-area-inset-bottom); 
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 600px; 
+            background: var(--surface); 
+            border-radius: var(--radius); 
+            box-shadow: var(--shadow-md); 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            position: relative; 
+            height: 100%; 
+        }
+
+        /* Анимация переключения экранов */
+        .screen { 
+            display: none; 
+            flex-direction: column; 
+            padding: 1.5rem; 
+            animation: fadeScaleIn 0.35s cubic-bezier(0.4, 0, 0.2, 1); 
+            height: 100%; 
+            overflow: hidden; 
+        }
+        .screen.active { display: flex; }
+        
+        @keyframes fadeScaleIn { 
+            from { opacity: 0; transform: scale(0.97) translateY(10px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+
+        h1, h2 { text-align: center; margin: 0; font-size: 1.6rem; color: var(--text-dark); font-weight: 800;}
+        
+        /* Меню */
+        #menu-root { 
+            overflow-y: auto; flex-grow: 1; padding-bottom: 20px; padding-top: 15px; 
+            display: flex; flex-direction: column; gap: 14px; 
+        }
+        
+        /* Карточки в меню */
+        .menu-card { 
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; 
+            padding: 20px; cursor: pointer; 
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: var(--shadow-sm); flex-shrink: 0; 
+            position: relative;
+            overflow: hidden;
+        }
+        .menu-card::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0));
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .menu-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: #cbd5e1; }
+        .menu-card:active { transform: scale(0.97); box-shadow: var(--shadow-sm); }
+        .menu-card:hover::after { opacity: 1; }
+        
+        .menu-card h3 { margin: 0 0 6px 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px;}
+        .stat-text { font-size: 0.9rem; color: var(--text-light); }
+        
+        /* Спец-кнопки Миксов */
+        .menu-card.mix-eng { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; border: none; }
+        .menu-card.mix-eng .stat-text { color: #dbeafe; }
+        
+        .menu-card.mix-kz { background: linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%); color: white; border: none; }
+        .menu-card.mix-kz .stat-text { color: #ede9fe; }
+
+        .menu-card.resume { background: linear-gradient(135deg, #065f46 0%, #10b981 100%); color: white; border: none; }
+        .menu-card.resume .stat-text { color: #d1fae5; }
+
+        /* Шапка теста */
+        .header-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; flex-shrink: 0; }
+        .btn-icon { background: #eff6ff; border: none; font-size: 0.95rem; font-weight: 700; color: var(--primary); padding: 10px 14px; cursor: pointer; border-radius: 10px; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-icon:hover { background: #dbeafe; }
+        .subject-badge { font-size: 0.85rem; font-weight: 800; color: var(--text-dark); text-align: center; max-width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        /* Прогресс-бар */
+        .progress-block { margin-bottom: 20px; flex-shrink: 0; }
+        .counter-label { text-align: center; font-size: 0.95rem; font-weight: 600; color: var(--text-light); margin-bottom: 8px; font-variant-numeric: tabular-nums;}
+        .track { height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);}
+        .fill { height: 100%; background: linear-gradient(90deg, var(--primary), #60a5fa); width: 0; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 10px;}
+
+        /* Зона вопроса */
+        .q-area { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; margin-bottom: 10px; padding-right: 5px;}
+        .question-text { font-size: 1.3rem; font-weight: 700; line-height: 1.45; margin-bottom: 25px; }
+        
+        /* Варианты ответов */
+        .options-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .option { 
+            padding: 16px 18px; border: 2px solid #e2e8f0; border-radius: 14px; 
+            cursor: pointer; font-size: 1.05rem; display: flex; align-items: flex-start; 
+            background: #fff; transition: all 0.2s ease;
+        }
+        .option:hover { border-color: #93c5fd; background: #f8fafc; transform: translateX(2px);}
+        
+        /* Анимация выбора */
+        .option.selected { 
+            background: #eff6ff; border-color: var(--primary); color: var(--primary-dark); 
+            animation: selectPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 500;
+        }
+        @keyframes selectPop { 50% { transform: scale(1.02); } }
+
+        .circle { min-width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 50%; margin-right: 14px; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: 0.2s; background: #fff;}
+        .option.selected .circle { border-color: var(--primary); }
+        .option.selected .circle::after { content: ''; width: 12px; height: 12px; background: var(--primary); border-radius: 50%; animation: zoomIn 0.2s ease;}
+        @keyframes zoomIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* Подвал с кнопками */
+        .footer { margin-top: auto; display: flex; gap: 15px; flex-shrink: 0; padding-top: 12px; border-top: 2px solid #f1f5f9; }
+        .btn-nav { flex: 1; padding: 16px; border: none; border-radius: 14px; font-size: 1.05rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+        .btn-nav.prev { background: #f1f5f9; color: #475569; }
+        .btn-nav.prev:hover { background: #e2e8f0; }
+        .btn-nav.next { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        .btn-nav.next:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 6px 15px rgba(59,130,246,0.4); }
+        .btn-nav.next:active { transform: scale(0.98); }
+        .btn-nav.finish { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; box-shadow: 0 4px 12px rgba(15,23,42,0.3);}
+
+        /* Экран результатов */
+        .res-header-fixed { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid #f1f5f9; }
+        .score-box { text-align: center; padding: 25px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 20px; margin: 15px 0 20px 0; border: 1px solid #e2e8f0;}
+        .score-val { font-size: 3.5rem; font-weight: 900; color: var(--primary); text-shadow: 0 2px 4px rgba(59,130,246,0.2); margin-bottom: 5px; line-height: 1;}
+        .score-desc { font-size: 1.1rem; color: var(--text-light); font-weight: 600;}
+        
+        .review-box { flex-grow: 1; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; background: #fafafa;}
+        .review-item { 
+            padding: 14px; border-radius: 12px; margin-bottom: 10px; font-size: 0.95rem; border: 1px solid transparent;
+            /* Каскадная анимация появления */
+            opacity: 0; animation: slideUpFade 0.4s ease forwards;
+        }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .review-item.good { background: #f0fdf4; border-color: #bbf7d0; border-left: 5px solid var(--green); }
+        .review-item.bad { background: #fef2f2; border-color: #fecaca; border-left: 5px solid var(--red); }
+        .review-q { font-weight: 700; margin-bottom: 6px; color: var(--text-dark); line-height: 1.3;}
+        .review-ans { font-size: 0.9em; margin-top: 4px; font-weight: 500;}
+
         /* Кнопки синхронизации */
-        .sync-block { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-small { font-size: 0.75rem; padding: 5px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; }
+        .sync-block { display: flex; gap: 10px; margin-top: 15px; margin-bottom: 5px;}
+        .btn-small { 
+            flex: 1; font-size: 0.8rem; font-weight: 600; padding: 10px; 
+            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; 
+            cursor: pointer; color: #475569; transition: 0.2s; 
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-small:hover { background: #f1f5f9; color: var(--text-dark); border-color: #94a3b8;}
+        .btn-small:active { transform: scale(0.96); }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- MENU SCREEN -->
     <div id="scr-home" class="screen active">
         <h1>Студенческие Тесты</h1>
         <div class="sync-block">
-            <button class="btn-small" onclick="App.exportSession()">📤 Копировать прогресс</button>
+            <button class="btn-small" onclick="App.exportSession()">📤 Копировать код</button>
             <button class="btn-small" onclick="App.importSession()">📥 Вставить прогресс</button>
         </div>
         <div id="menu-root"></div>
     </div>
 
+    <!-- QUIZ SCREEN -->
     <div id="scr-quiz" class="screen">
         <div class="header-nav">
             <button class="btn-icon" onclick="App.goHomeSafe()">🏠 Меню</button>
@@ -93,15 +215,16 @@
         </div>
     </div>
 
+    <!-- RESULTS SCREEN -->
     <div id="scr-res" class="screen">
         <div class="res-header-fixed">
             <button class="btn-icon" onclick="App.goHome()">🏠 В меню</button>
-            <h2>Итоги</h2>
+            <h2>Итоги теста</h2>
             <div style="width: 70px;"></div>
         </div>
         <div class="score-box">
             <div class="score-val" id="res-score">0%</div>
-            <div id="res-text">0/0 верно</div>
+            <div class="score-desc" id="res-text">0 из 0 верно</div>
         </div>
         <div class="review-box" id="res-log"></div>
     </div>
@@ -109,10 +232,14 @@
 
 <script>
     const App = {
-        data: [], cursor: 0, answers: {}, activeKey: '',
+        data:[], cursor: 0, answers: {}, activeKey: '',
         
+        // Ключи предметов для разделения Миксов
+        mixEngKeys:['history', 'grammar', 'phonetics', 'country', 'lexicology', 'business'],
+        mixKzKeys:['metodika', 'management', 'pedagogy', 'anatomy_cyber'],
+
         init() {
-            if(typeof QUESTIONS_DB === 'undefined') { alert("Ошибка: data.js не найден!"); return; }
+            if(typeof QUESTIONS_DB === 'undefined') { alert("Ошибка: файл data.js не найден!"); return; }
             this.renderMenu();
         },
 
@@ -122,17 +249,18 @@
                 activeKey: this.activeKey,
                 cursor: this.cursor,
                 answers: this.answers,
-                data: this.data // Сохраняем перемешанные данные, чтобы порядок не сбился
+                data: this.data,
+                time: new Date().getTime()
             };
-            localStorage.setItem('quiz_session_v1', JSON.stringify(session));
+            localStorage.setItem('quiz_session_v2', JSON.stringify(session));
         },
 
         clearSession() {
-            localStorage.removeItem('quiz_session_v1');
+            localStorage.removeItem('quiz_session_v2');
         },
 
         resumeSession() {
-            const raw = localStorage.getItem('quiz_session_v1');
+            const raw = localStorage.getItem('quiz_session_v2');
             if(!raw) return;
             const session = JSON.parse(raw);
             this.activeKey = session.activeKey;
@@ -144,21 +272,21 @@
         },
 
         exportSession() {
-            const raw = localStorage.getItem('quiz_session_v1');
-            if(!raw) return alert("Нет активного теста для экспорта.");
+            const raw = localStorage.getItem('quiz_session_v2');
+            if(!raw) return alert("Нет активного (незавершенного) теста для копирования.");
             navigator.clipboard.writeText(raw);
-            alert("Код прогресса скопирован! Вы можете отправить его себе в мессенджер и вставить на другом устройстве.");
+            alert("Код прогресса скопирован!\n\nОтправьте его себе (например, в Избранное Telegram), чтобы потом вставить на другом устройстве и продолжить тест с этого же места.");
         },
 
         importSession() {
-            const code = prompt("Вставьте код прогресса:");
+            const code = prompt("Вставьте скопированный код прогресса:");
             if(!code) return;
             try {
-                JSON.parse(code); // проверка на валидность
-                localStorage.setItem('quiz_session_v1', code);
+                JSON.parse(code); 
+                localStorage.setItem('quiz_session_v2', code);
                 this.renderMenu();
-                alert("Прогресс загружен! Нажмите 'Продолжить тест'.");
-            } catch(e) { alert("Ошибка: неверный код."); }
+                alert("Прогресс успешно загружен! Нажмите зеленую кнопку 'Продолжить тест'.");
+            } catch(e) { alert("Ошибка: неверный код прогресса."); }
         },
 
         // --- ОСНОВНАЯ ЛОГИКА ---
@@ -167,50 +295,75 @@
             root.innerHTML = '';
 
             // Кнопка продолжения
-            const saved = localStorage.getItem('quiz_session_v1');
+            const saved = localStorage.getItem('quiz_session_v2');
             if(saved) {
                 const session = JSON.parse(saved);
                 const count = Object.keys(session.answers).length;
+                const date = new Date(session.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
                 const resumeBtn = document.createElement('div');
                 resumeBtn.className = 'menu-card resume';
-                resumeBtn.innerHTML = `<h3>⏳ Продолжить тест</h3><div class="stat-text">Отвечено: ${count} из ${session.data.length}</div>`;
+                resumeBtn.innerHTML = `
+                    <h3>⏳ Продолжить тест</h3>
+                    <div class="stat-text">Остановились в ${date} (отвечено ${count} из ${session.data.length})</div>
+                `;
                 resumeBtn.onclick = () => this.resumeSession();
                 root.appendChild(resumeBtn);
             }
 
-            // MIX
-            const mix = document.createElement('div');
-            mix.className = 'menu-card mix';
-            mix.innerHTML = `<h3>🔀 Общий Тест (Mix)</h3><div class="stat-text">Все вопросы вперемешку</div>`;
-            mix.onclick = () => this.start('mix');
-            root.appendChild(mix);
+            // MIX 1 (Английский блок)
+            const mixEng = document.createElement('div');
+            mixEng.className = 'menu-card mix-eng';
+            mixEng.innerHTML = `<h3>🇬🇧 Общий Тест (English)</h3><div class="stat-text">~300 вопросов (История, Грамматика, Фонетика и др.)</div>`;
+            mixEng.onclick = () => this.start('mix_eng');
+            root.appendChild(mixEng);
 
-            const hist = JSON.parse(localStorage.getItem('qz_history')) || {};
+            // MIX 2 (Педагогика блок)
+            const mixKz = document.createElement('div');
+            mixKz.className = 'menu-card mix-kz';
+            mixKz.innerHTML = `<h3>🇰🇿 Общий Тест (Педагогика)</h3><div class="stat-text">~460 вопросов (Методика, Басқару, Дидактика, Анатомия)</div>`;
+            mixKz.onclick = () => this.start('mix_kz');
+            root.appendChild(mixKz);
+
+            // Индивидуальные предметы
+            const hist = JSON.parse(localStorage.getItem('qz_history_recs')) || {};
+            
             Object.keys(QUESTIONS_DB).forEach(k => {
                 const item = QUESTIONS_DB[k];
                 const sc = hist[k] || 0;
                 const el = document.createElement('div');
                 el.className = 'menu-card';
-                el.innerHTML = `<h3>${item.title.split('(')[0]}</h3><div class="stat-text">Рекорд: ${sc}%</div>`;
+                // Берем короткое название до скобок, если есть
+                const shortTitle = item.title.includes('(') ? item.title.split('(')[0].trim() : item.title;
+                el.innerHTML = `<h3>📑 ${shortTitle}</h3><div class="stat-text">Лучший результат: ${sc}%</div>`;
                 el.onclick = () => this.start(k);
                 root.appendChild(el);
             });
         },
 
-        shuffle(arr) { return arr.map(v => ({v, r: Math.random()})).sort((a,b)=>a.r - b.r).map(d=>d.v); },
+        shuffle(arr) { 
+            return arr.map(v => ({v, r: Math.random()})).sort((a,b)=>a.r - b.r).map(d=>d.v); 
+        },
 
         start(key) {
-            if(localStorage.getItem('quiz_session_v1')) {
-                if(!confirm("У вас есть незавершенный тест. Начать новый? (Прогресс старого удалится)")) return;
+            if(localStorage.getItem('quiz_session_v2')) {
+                if(!confirm("Внимание! У вас есть незавершенный тест.\nНачать новый? (Прогресс старого удалится навсегда)")) return;
             }
             this.activeKey = key;
             this.cursor = 0;
             this.answers = {};
 
-            let qList = [];
-            if(key === 'mix') Object.values(QUESTIONS_DB).forEach(d => qList.push(...d.data));
-            else qList = QUESTIONS_DB[key].data;
+            let qList =[];
 
+            if (key === 'mix_eng') {
+                this.mixEngKeys.forEach(k => { if(QUESTIONS_DB[k]) qList.push(...QUESTIONS_DB[k].data); });
+            } else if (key === 'mix_kz') {
+                this.mixKzKeys.forEach(k => { if(QUESTIONS_DB[k]) qList.push(...QUESTIONS_DB[k].data); });
+            } else {
+                qList = QUESTIONS_DB[key].data;
+            }
+
+            // Перемешиваем и вопросы, и ответы
             this.data = this.shuffle(qList).map((qItem, i) => {
                 const opts = qItem.a.map((txt, idx) => ({ txt, correct: idx===0 }));
                 return { id: i, q: qItem.q, opts: this.shuffle(opts) };
@@ -225,25 +378,37 @@
             const item = this.data[this.cursor];
             const tot = this.data.length;
 
-            document.getElementById('subj-name').innerText = this.activeKey === 'mix' ? "СМЕШАННЫЙ ТЕСТ" : QUESTIONS_DB[this.activeKey].title;
+            // Настройка бейджа
+            let badgeText = "";
+            if (this.activeKey === 'mix_eng') badgeText = "MIX: ENGLISH";
+            else if (this.activeKey === 'mix_kz') badgeText = "MIX: ПЕДАГОГИКА";
+            else {
+                const title = QUESTIONS_DB[this.activeKey].title;
+                badgeText = title.includes('(') ? title.split('(')[0] : title;
+            }
+            document.getElementById('subj-name').innerText = badgeText;
+
+            // Прогресс
             document.getElementById('counter').innerText = `${this.cursor+1} / ${tot}`;
             document.getElementById('fill-bar').style.width = `${((this.cursor+1)/tot)*100}%`;
             document.getElementById('q-text').innerText = item.q;
 
+            // Варианты
             const list = document.getElementById('opt-root');
             list.innerHTML = '';
             item.opts.forEach((o, idx) => {
                 const row = document.createElement('div');
                 row.className = 'option' + (this.answers[this.cursor] === idx ? ' selected' : '');
-                row.innerHTML = `<div class="circle"></div><div>${o.txt}</div>`;
+                row.innerHTML = `<div class="circle"></div><div style="flex:1; line-height: 1.3;">${o.txt}</div>`;
                 row.onclick = () => {
                     this.answers[this.cursor] = idx;
-                    this.saveProgress(); // Сохраняем после каждого клика
+                    this.saveProgress();
                     this.renderQ(); 
                 };
                 list.appendChild(row);
             });
 
+            // Навигация
             const isLast = this.cursor === tot - 1;
             document.getElementById('btn-prev').style.visibility = this.cursor === 0 ? 'hidden' : 'visible';
             document.getElementById('btn-next').style.display = isLast ? 'none' : 'flex';
@@ -256,12 +421,19 @@
 
         goHomeSafe() {
             if(Object.keys(this.answers).length > 0) {
-                if(confirm("Выйти в меню? Прогресс сохранен, вы сможете продолжить позже.")) this.goHome();
-            } else this.goHome();
+                if(confirm("Выйти в меню? Прогресс сохранен, вы сможете продолжить тест позже.")) {
+                    this.goHome();
+                }
+            } else {
+                this.goHome();
+            }
         },
 
         finishEarly() {
-            if(confirm("Завершить тест сейчас и посмотреть результат?")) this.finish();
+            const left = this.data.length - Object.keys(this.answers).length;
+            if(confirm(`Вы не ответили на ${left} вопр.\nЗавершить тест сейчас и посмотреть итоги?`)) {
+                this.finish();
+            }
         },
 
         finish() {
@@ -271,40 +443,61 @@
 
             this.data.forEach((item, i) => {
                 const uIdx = this.answers[i];
-                let isRight = (uIdx !== undefined && item.opts[uIdx].correct);
+                let isRight = false;
+                let uTxt = "Нет ответа";
+                
+                if(uIdx !== undefined) {
+                    uTxt = item.opts[uIdx].txt;
+                    if(item.opts[uIdx].correct) isRight = true;
+                }
+                
                 if(isRight) ok++;
 
                 const rightTxt = item.opts.find(o => o.correct).txt;
+                
                 const div = document.createElement('div');
                 div.className = `review-item ${isRight?'good':'bad'}`;
+                // Каскадная задержка появления для красоты (макс 2 секунды, чтобы не ждать вечно если 300 вопросов)
+                const delay = Math.min(i * 0.05, 2); 
+                div.style.animationDelay = `${delay}s`;
+                
                 div.innerHTML = `
-                    <div style="font-weight:600; margin-bottom:4px">${i+1}. ${item.q}</div>
-                    <div style="font-size:0.9em">${isRight?'✅':'❌'} ${rightTxt}</div>
+                    <div class="review-q">${i+1}. ${item.q}</div>
+                    ${!isRight ? `<div class="review-ans" style="color:var(--red); text-decoration:line-through;">Вы: ${uTxt}</div>` : ''}
+                    <div class="review-ans" style="color:#059669;">${isRight?'✅':'👉'} ${rightTxt}</div>
                 `;
                 log.appendChild(div);
             });
 
             const pct = Math.round((ok / this.data.length)*100);
-            document.getElementById('res-score').innerText = pct + '%';
-            document.getElementById('res-text').innerText = `${ok} / ${this.data.length} верно`;
+            
+            const scEl = document.getElementById('res-score');
+            scEl.innerText = pct + '%';
+            scEl.style.color = pct >= 80 ? 'var(--green)' : (pct >= 50 ? '#eab308' : 'var(--red)');
+            document.getElementById('res-text').innerText = `${ok} из ${this.data.length} верно`;
 
-            // Сохраняем рекорд
-            if(this.activeKey !== 'mix') {
-                const h = JSON.parse(localStorage.getItem('qz_history')) || {};
+            // Сохраняем рекорд только для обычных предметов
+            if(!this.activeKey.startsWith('mix')) {
+                const h = JSON.parse(localStorage.getItem('qz_history_recs')) || {};
                 if(pct > (h[this.activeKey]||0)) {
                     h[this.activeKey] = pct;
-                    localStorage.setItem('qz_history', JSON.stringify(h));
+                    localStorage.setItem('qz_history_recs', JSON.stringify(h));
                 }
             }
 
-            this.clearSession(); // Тест завершен — удаляем черновик
+            this.clearSession(); // Удаляем сейв
             this.showScr('scr-res');
         },
 
-        goHome() { this.renderMenu(); this.showScr('scr-home'); },
+        goHome() { 
+            this.renderMenu(); 
+            this.showScr('scr-home'); 
+        },
+        
         showScr(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            if(id === 'scr-res') document.getElementById('res-log').scrollTop = 0;
         }
     };
 
