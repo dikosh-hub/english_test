@@ -579,36 +579,136 @@ const App={
         if(confirm(`Не отвечено: ${left} вопр.\nЗавершить и посмотреть итоги?`))this.finish();
     },
     finish(){
-        let ok=0;const log=document.getElementById('res-log');log.innerHTML='';
-        this.data.forEach((item,i)=>{
-            const uIdx=this.answers[i];let isRight=false,uTxt='Нет ответа';
-            if(uIdx!==undefined){uTxt=item.opts[uIdx].txt;if(item.opts[uIdx].correct)isRight=true;}
-            if(isRight)ok++;
-            const rightTxt=item.opts.find(o=>o.correct).txt;
-            const div=document.createElement('div');
-            div.className=`review-item ${isRight?'good':'bad'}`;
-            div.style.animationDelay=`${Math.min(i*0.035,1.8)}s`;
-            div.innerHTML=`<div class="review-q">${i+1}. ${item.q}</div>${!isRight?`<div class="review-ans" style="color:var(--accent);text-decoration:line-through;">Вы: ${uTxt}</div>`:''}<div class="review-ans" style="color:${isRight?'var(--teal)':'var(--ink)'};">${isRight?'✓':'→'} ${rightTxt}</div>`;
-            log.appendChild(div);
-        });
-        const pct=Math.round((ok/this.data.length)*100);
-        const scEl=document.getElementById('res-score');
-        scEl.innerText=pct+'%';
-        scEl.style.color=pct>=80?'var(--teal)':pct>=50?'var(--gold)':'var(--accent)';
-        document.getElementById('res-text').innerText=`${ok} из ${this.data.length} верно`;
-        const badge=document.getElementById('res-badge');
-        const[txt,bg,clr]=pct>=90?['🔥 Отличный результат','rgba(6,214,160,0.1)','var(--teal)']:
-            pct>=70?['👍 Хороший результат','rgba(255,190,11,0.1)','#9a7000']:
-            pct>=50?['📚 Нужно подтянуть','rgba(255,190,11,0.08)','#9a7000']:
-            ['💪 Продолжай стараться','rgba(255,77,109,0.08)','var(--accent)'];
-        badge.innerText=txt;
-        badge.style.cssText=`background:${bg};color:${clr};display:inline-block;margin-top:10px;padding:5px 16px;border-radius:100px;font-family:Syne,sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;`;
-        if(!this.activeKey.startsWith('mix')){
-            const h=JSON.parse(localStorage.getItem('qz_history_recs'))||{};
-            if(pct>(h[this.activeKey]||0)){h[this.activeKey]=pct;localStorage.setItem('qz_history_recs',JSON.stringify(h));}
+    let ok = 0;
+    const log = document.getElementById('res-log');
+    log.innerHTML = '';
+
+    // Сначала считаем статистику и сохраняем все данные для отображения
+    const allItems = [];
+    this.data.forEach((item, i) => {
+        const uIdx = this.answers[i];
+        let isRight = false;
+        let uTxt = 'Нет ответа';
+        if (uIdx !== undefined) {
+            uTxt = item.opts[uIdx].txt;
+            if (item.opts[uIdx].correct) isRight = true;
         }
-        this.clearSession();this.showScr('scr-res');
-    },
+        if (isRight) ok++;
+        const rightTxt = item.opts.find(o => o.correct).txt;
+        allItems.push({ i, q: item.q, uTxt, rightTxt, isRight });
+    });
+
+    const pct = Math.round((ok / this.data.length) * 100);
+    const scEl = document.getElementById('res-score');
+    scEl.innerText = pct + '%';
+    scEl.style.color = pct >= 80 ? 'var(--teal)' : (pct >= 50 ? 'var(--gold)' : 'var(--accent)');
+    document.getElementById('res-text').innerText = `${ok} из ${this.data.length} верно`;
+
+    const badge = document.getElementById('res-badge');
+    const [txt, bg, clr] = pct >= 90 ? ['🔥 Отличный результат', 'rgba(6,214,160,0.1)', 'var(--teal)'] :
+        pct >= 70 ? ['👍 Хороший результат', 'rgba(255,190,11,0.1)', '#9a7000'] :
+        pct >= 50 ? ['📚 Нужно подтянуть', 'rgba(255,190,11,0.08)', '#9a7000'] :
+        ['💪 Продолжай стараться', 'rgba(255,77,109,0.08)', 'var(--accent)'];
+    badge.innerText = txt;
+    badge.style.cssText = `background:${bg};color:${clr};display:inline-block;margin-top:10px;padding:5px 16px;border-radius:100px;font-family:Syne,sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;`;
+
+    // Сохраняем историю рекордов
+    if (!this.activeKey.startsWith('mix')) {
+        const h = JSON.parse(localStorage.getItem('qz_history_recs')) || {};
+        if (pct > (h[this.activeKey] || 0)) {
+            h[this.activeKey] = pct;
+            localStorage.setItem('qz_history_recs', JSON.stringify(h));
+        }
+    }
+
+    // Пагинация: показываем по 30 вопросов
+    const PAGE_SIZE = 30;
+    let currentPage = 0;
+    const totalPages = Math.ceil(allItems.length / PAGE_SIZE);
+
+    // Функция отрисовки одной страницы
+    function renderPage(page) {
+        const start = page * PAGE_SIZE;
+        const end = Math.min(start + PAGE_SIZE, allItems.length);
+        for (let i = start; i < end; i++) {
+            const item = allItems[i];
+            const div = document.createElement('div');
+            div.className = `review-item ${item.isRight ? 'good' : 'bad'}`;
+            div.style.animationDelay = `${(i - start) * 0.02}s`;
+            if (!item.isRight) {
+                div.innerHTML = `<div class="review-q">${item.i+1}. ${item.q}</div>
+                                 <div class="review-ans" style="color:var(--accent);text-decoration:line-through;">Вы: ${item.uTxt}</div>
+                                 <div class="review-ans" style="color:var(--ink);">→ ${item.rightTxt}</div>`;
+            } else {
+                div.innerHTML = `<div class="review-q">${item.i+1}. ${item.q}</div>
+                                 <div class="review-ans" style="color:var(--teal);">✓ ${item.rightTxt}</div>`;
+            }
+            log.appendChild(div);
+        }
+    }
+
+    // Кнопки пагинации
+    const paginationDiv = document.createElement('div');
+    paginationDiv.style.cssText = 'display:flex; justify-content:center; gap:12px; margin:16px 0 8px; padding:8px; flex-shrink:0;';
+    const prevBtn = document.createElement('button');
+    prevBtn.innerText = '← Назад';
+    prevBtn.className = 'btn-pill';
+    prevBtn.disabled = true;
+    const nextBtn = document.createElement('button');
+    nextBtn.innerText = 'Далее →';
+    nextBtn.className = 'btn-pill';
+    const pageInfo = document.createElement('span');
+    pageInfo.style.cssText = 'font-size:0.8rem; color:var(--muted); align-self:center;';
+
+    function updateButtons() {
+        prevBtn.disabled = currentPage === 0;
+        nextBtn.disabled = currentPage >= totalPages - 1;
+        pageInfo.innerText = `${currentPage+1} / ${totalPages}`;
+    }
+
+    prevBtn.onclick = () => {
+        if (currentPage > 0) {
+            currentPage--;
+            log.innerHTML = '';
+            renderPage(currentPage);
+            updateButtons();
+            log.scrollTop = 0;
+        }
+    };
+    nextBtn.onclick = () => {
+        if (currentPage < totalPages - 1) {
+            currentPage++;
+            log.innerHTML = '';
+            renderPage(currentPage);
+            updateButtons();
+            log.scrollTop = 0;
+        }
+    };
+
+    paginationDiv.appendChild(prevBtn);
+    paginationDiv.appendChild(pageInfo);
+    paginationDiv.appendChild(nextBtn);
+
+    // Рендерим первую страницу
+    renderPage(0);
+    updateButtons();
+
+    // Добавляем пагинацию в блок результатов (перед или после списка)
+    const reviewBox = document.querySelector('.review-box');
+    // Удаляем старую пагинацию, если была
+    const oldPag = reviewBox.querySelector('.review-pagination');
+    if (oldPag) oldPag.remove();
+    paginationDiv.classList.add('review-pagination');
+    reviewBox.appendChild(paginationDiv);
+
+    // Если вопросов мало – кнопки скрываем (не нужны)
+    if (totalPages <= 1) {
+        paginationDiv.style.display = 'none';
+    }
+
+    this.clearSession();
+    this.showScr('scr-res');
+},
     goHome(){this.renderMenu();this.showScr('scr-home');},
     showScr(id){
         document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
