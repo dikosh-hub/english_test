@@ -462,144 +462,239 @@
 
 </div>
 <script>
-const LETTERS=['A','B','C','D','E','F'];
-const App={
-    data:[],cursor:0,answers:{},activeKey:'',
-    mixEngKeys:['history','grammar','phonetics','country','lexicology','business'],
+const LETTERS = ['A','B','C','D','E','F'];
+const CHUNK_SIZE = 50; // Максимальное количество вопросов в одной части
+
+const App = {
+    data:[], cursor: 0, answers: {}, 
+    activeKey: '', activeRecordKey: '', quizTitle: '',
+    
+    mixEngKeys: ['history','grammar','phonetics','country','lexicology','business'],
     mixKzKeys:['metodika','management','pedagogy','anatomy_cyber'],
     
-    init(){
-        if(typeof QUESTIONS_DB==='undefined'){alert("Ошибка: data.js не найден!");return;}
+    init() {
+        if(typeof QUESTIONS_DB === 'undefined') { alert("Ошибка: data.js не найден!"); return; }
         this.renderMenu();
     },
     
-    saveProgress(){
-        localStorage.setItem('quiz_session_v2',JSON.stringify({activeKey:this.activeKey,cursor:this.cursor,answers:this.answers,data:this.data,time:Date.now()}));
+    saveProgress() {
+        localStorage.setItem('quiz_session_v3', JSON.stringify({
+            activeKey: this.activeKey,
+            activeRecordKey: this.activeRecordKey,
+            quizTitle: this.quizTitle,
+            cursor: this.cursor,
+            answers: this.answers,
+            data: this.data,
+            time: Date.now()
+        }));
     },
     
-    clearSession(){localStorage.removeItem('quiz_session_v2');},
+    clearSession() { localStorage.removeItem('quiz_session_v3'); },
     
-    resumeSession(){
-        const s=JSON.parse(localStorage.getItem('quiz_session_v2'));
+    resumeSession() {
+        const s = JSON.parse(localStorage.getItem('quiz_session_v3'));
         if(!s) return;
-        this.activeKey=s.activeKey;this.cursor=s.cursor;this.answers=s.answers;this.data=s.data;
-        this.showScr('scr-quiz');this.renderQ();
+        this.activeKey = s.activeKey;
+        this.activeRecordKey = s.activeRecordKey || s.activeKey;
+        this.quizTitle = s.quizTitle || 'Тест';
+        this.cursor = s.cursor; 
+        this.answers = s.answers; 
+        this.data = s.data;
+        this.showScr('scr-quiz'); 
+        this.renderQ();
     },
     
-    exportSession(){
-        const raw=localStorage.getItem('quiz_session_v2');
-        if(!raw)return alert("Нет активного теста для экспорта.");
-        navigator.clipboard.writeText(raw).then(()=>alert("Скопировано! Отправьте себе в Telegram Избранное.")).catch(()=>alert("Не удалось скопировать."));
+    exportSession() {
+        const raw = localStorage.getItem('quiz_session_v3');
+        if(!raw) return alert("Нет активного теста для экспорта.");
+        navigator.clipboard.writeText(raw)
+            .then(() => alert("Скопировано! Отправьте себе в Telegram Избранное."))
+            .catch(() => alert("Не удалось скопировать."));
     },
     
-    importSession(){
-        const code=prompt("Вставьте код прогресса:");
-        if(!code)return;
-        try{JSON.parse(code);localStorage.setItem('quiz_session_v2',code);this.renderMenu();alert("Прогресс загружен! Нажмите зелёную кнопку.");}
-        catch(e){alert("Ошибка: неверный код.");}
+    importSession() {
+        const code = prompt("Вставьте код прогресса:");
+        if(!code) return;
+        try {
+            JSON.parse(code); 
+            localStorage.setItem('quiz_session_v3', code); 
+            this.renderMenu(); 
+            alert("Прогресс загружен! Нажмите зелёную кнопку.");
+        } catch(e) { alert("Ошибка: неверный код."); }
     },
     
-    _label(t){const d=document.createElement('div');d.className='menu-label';d.textContent=t;return d;},
+    _label(t) { 
+        const d = document.createElement('div'); 
+        d.className = 'menu-label'; 
+        d.textContent = t; 
+        return d; 
+    },
     
-    _card(cls,title,sub){
-        const d=document.createElement('div');d.className=`menu-card ${cls}`;
-        d.innerHTML=`<div class="blob blob1"></div><div class="blob blob2"></div><h3>${title}</h3><div class="stat-text">${sub}</div>`;
+    _card(cls, title, sub) {
+        const d = document.createElement('div'); 
+        d.className = `menu-card ${cls}`;
+        d.innerHTML = `<div class="blob blob1"></div><div class="blob blob2"></div><h3 style="line-height:1.2;">${title}</h3><div class="stat-text">${sub}</div>`;
         return d;
     },
     
-    renderMenu(){
-        const root=document.getElementById('menu-root');root.innerHTML='';
-        const saved=localStorage.getItem('quiz_session_v2');
-        if(saved){
-            const s=JSON.parse(saved);
-            const cnt=Object.keys(s.answers).length;
-            const t=new Date(s.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-            const c=this._card('resume','⏳ Продолжить тест',`Остановились в ${t} · отвечено ${cnt} из ${s.data.length}`);
-            c.onclick=()=>this.resumeSession();root.appendChild(c);
-            root.appendChild(this._label('Категории'));
+    renderMenu() {
+        const root = document.getElementById('menu-root'); 
+        root.innerHTML = '';
+        
+        const saved = localStorage.getItem('quiz_session_v3');
+        if(saved) {
+            const s = JSON.parse(saved);
+            const cnt = Object.keys(s.answers).length;
+            const t = new Date(s.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const c = this._card('resume', '⏳ Продолжить тест', `Остановились в ${t} · отвечено ${cnt} из ${s.data.length}`);
+            c.onclick = () => this.resumeSession(); 
+            root.appendChild(c);
+            root.appendChild(this._label('Экзамен (Микс)'));
+        } else {
+            root.appendChild(this._label('Экзамен-симулятор'));
         }
-        const ec=this._card('mix-eng','🇬🇧 Общий тест (English)','~300 вопросов · История, Грамматика, Фонетика и др.');
-        ec.onclick=()=>this.start('mix_eng');root.appendChild(ec);
-        const kc=this._card('mix-kz','🇰🇿 Общий тест (Педагогика)','~460 вопросов · Методика, Басқару, Дидактика, Анатомия');
-        kc.onclick=()=>this.start('mix_kz');root.appendChild(kc);
-        root.appendChild(this._label('Предметы'));
-        const hist=JSON.parse(localStorage.getItem('qz_history_recs'))||{};
-        Object.keys(QUESTIONS_DB).forEach(k=>{
-            const item=QUESTIONS_DB[k];const sc=hist[k]||0;
-            const shortTitle=item.title.includes('(')?item.title.split('(')[0].trim():item.title;
-            const pctColor=sc>=80?'var(--teal)':sc>=50?'var(--gold)':sc>0?'var(--accent)':'var(--muted)';
-            const el=document.createElement('div');el.className='menu-card default-card';
-            el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;min-width:0;"><h3>${shortTitle}</h3><div class="stat-text" style="color:${pctColor}">${sc>0?'Рекорд: '+sc+'%':'Ещё не пройден'}</div></div><div class="card-arrow">→</div></div>`;
-            el.onclick=()=>this.start(k);root.appendChild(el);
+        
+        const ec = this._card('mix-eng', '🇬🇧 Общий тест (English)', '50 случайных вопросов со всех тем');
+        ec.onclick = () => this.start('mix_eng'); 
+        root.appendChild(ec);
+        
+        const kc = this._card('mix-kz', '🇰🇿 Общий тест (Педагогика)', '50 случайных вопросов со всех тем');
+        kc.onclick = () => this.start('mix_kz'); 
+        root.appendChild(kc);
+        
+        root.appendChild(this._label('Темы по частям'));
+        const hist = JSON.parse(localStorage.getItem('qz_history_recs')) || {};
+        
+        Object.keys(QUESTIONS_DB).forEach(k => {
+            const item = QUESTIONS_DB[k];
+            const total = item.data.length;
+            const shortTitle = item.title.includes('(') ? item.title.split('(')[0].trim() : item.title;
+            
+            // Если вопросов мало, выводим одной кнопкой
+            if (total <= CHUNK_SIZE) {
+                const sc = hist[k] || 0;
+                const pctColor = sc >= 80 ? 'var(--teal)' : sc >= 50 ? 'var(--gold)' : sc > 0 ? 'var(--accent)' : 'var(--muted)';
+                const el = document.createElement('div'); 
+                el.className = 'menu-card default-card';
+                el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;min-width:0;"><h3 style="font-size:1rem;">${shortTitle}</h3><div class="stat-text" style="color:${pctColor}">${sc > 0 ? 'Рекорд: ' + sc + '%' : 'Ещё не пройден'}</div></div><div class="card-arrow">→</div></div>`;
+                el.onclick = () => this.start(k, undefined, shortTitle, k); 
+                root.appendChild(el);
+            } 
+            // Если вопросов больше 50, бьем на части
+            else {
+                const chunks = Math.ceil(total / CHUNK_SIZE);
+                for (let i = 0; i < chunks; i++) {
+                    const startNum = i * CHUNK_SIZE + 1;
+                    const endNum = Math.min((i + 1) * CHUNK_SIZE, total);
+                    const recordKey = `${k}_part_${i}`;
+                    const sc = hist[recordKey] || 0;
+                    const pctColor = sc >= 80 ? 'var(--teal)' : sc >= 50 ? 'var(--gold)' : sc > 0 ? 'var(--accent)' : 'var(--muted)';
+                    const chunkTitle = `${shortTitle} (Часть ${i + 1})`;
+                    
+                    const el = document.createElement('div'); 
+                    el.className = 'menu-card default-card';
+                    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;min-width:0;"><h3 style="font-size:0.95rem;">${chunkTitle}</h3><div class="stat-text" style="margin-bottom:3px;">Сұрақтар: ${startNum} - ${endNum}</div><div class="stat-text" style="color:${pctColor}; font-weight: 500;">${sc > 0 ? '🏆 Рекорд: ' + sc + '%' : 'Ещё не пройден'}</div></div><div class="card-arrow">→</div></div>`;
+                    el.onclick = () => this.start(k, i, chunkTitle, recordKey); 
+                    root.appendChild(el);
+                }
+            }
         });
     },
     
-    shuffle(arr){return arr.map(v=>({v,r:Math.random()})).sort((a,b)=>a.r-b.r).map(d=>d.v);},
+    shuffle(arr) { return arr.map(v => ({v, r: Math.random()})).sort((a,b) => a.r - b.r).map(d => d.v); },
     
-    start(key){
-        if(localStorage.getItem('quiz_session_v2')){
-            if(!confirm("Есть незавершённый тест.\nНачать новый? Прогресс удалится."))return;
+    start(key, chunkIndex, title, recordKey) {
+        if(localStorage.getItem('quiz_session_v3')){
+            if(!confirm("Есть незавершённый тест.\nНачать новый? Прогресс удалится.")) return;
         }
-        this.activeKey=key;this.cursor=0;this.answers={};
-        let q=[];
-        if(key==='mix_eng')this.mixEngKeys.forEach(k=>{if(QUESTIONS_DB[k])q.push(...QUESTIONS_DB[k].data);});
-        else if(key==='mix_kz')this.mixKzKeys.forEach(k=>{if(QUESTIONS_DB[k])q.push(...QUESTIONS_DB[k].data);});
-        else q=QUESTIONS_DB[key].data;
-        this.data=this.shuffle(q).map((qi,i)=>{
-            const opts=qi.a.map((txt,idx)=>({txt,correct:idx===0}));
-            return{id:i,q:qi.q,opts:this.shuffle(opts)};
+        this.activeKey = key;
+        this.activeRecordKey = recordKey || key;
+        this.cursor = 0; 
+        this.answers = {};
+        
+        let q =[];
+        
+        if(key === 'mix_eng') {
+            this.quizTitle = 'MIX: ENGLISH';
+            this.mixEngKeys.forEach(k => { if(QUESTIONS_DB[k]) q.push(...QUESTIONS_DB[k].data); });
+            q = this.shuffle(q).slice(0, CHUNK_SIZE); // Берем только 50 рандомных
+        } 
+        else if(key === 'mix_kz') {
+            this.quizTitle = 'MIX: ПЕДАГОГИКА';
+            this.mixKzKeys.forEach(k => { if(QUESTIONS_DB[k]) q.push(...QUESTIONS_DB[k].data); });
+            q = this.shuffle(q).slice(0, CHUNK_SIZE); // Берем только 50 рандомных
+        } 
+        else {
+            this.quizTitle = title;
+            q = QUESTIONS_DB[key].data;
+            if (chunkIndex !== undefined) {
+                q = q.slice(chunkIndex * CHUNK_SIZE, (chunkIndex + 1) * CHUNK_SIZE);
+            }
+        }
+        
+        this.data = this.shuffle(q).map((qi, i) => {
+            const opts = qi.a.map((txt, idx) => ({ txt, correct: idx === 0 }));
+            return { id: i, q: qi.q, opts: this.shuffle(opts) };
         });
-        this.saveProgress();this.showScr('scr-quiz');this.renderQ();
+        
+        this.saveProgress(); 
+        this.showScr('scr-quiz'); 
+        this.renderQ();
     },
     
-    renderQ(){
-        const item=this.data[this.cursor],tot=this.data.length;
-        const pct=Math.round(((this.cursor+1)/tot)*100);
-        let badge='';
-        if(this.activeKey==='mix_eng')badge='MIX: ENGLISH';
-        else if(this.activeKey==='mix_kz')badge='MIX: ПЕДАГОГИКА';
-        else{const t=QUESTIONS_DB[this.activeKey].title;badge=t.includes('(')?t.split('(')[0].trim():t;}
-        document.getElementById('subj-name').innerText=badge;
-        document.getElementById('q-num').innerText=this.cursor+1;
-        document.getElementById('q-tot').innerText=tot;
-        document.getElementById('q-pct').innerText=pct+'%';
-        document.getElementById('q-num-label').innerText='Вопрос '+(this.cursor+1);
-        document.getElementById('fill-bar').style.width=pct+'%';
-        document.getElementById('q-text').innerText=item.q;
-        const list=document.getElementById('opt-root');list.innerHTML='';
-        item.opts.forEach((o,idx)=>{
-            const row=document.createElement('div');
-            row.className='option'+(this.answers[this.cursor]===idx?' selected':'');
-            row.innerHTML=`<div class="option-dot"></div><span class="option-letter">${LETTERS[idx]}</span><div class="option-text">${o.txt}</div>`;
-            row.onclick=()=>{this.answers[this.cursor]=idx;this.saveProgress();this.renderQ();};
+    renderQ() {
+        const item = this.data[this.cursor], tot = this.data.length;
+        const pct = Math.round(((this.cursor + 1) / tot) * 100);
+        
+        document.getElementById('subj-name').innerText = this.quizTitle;
+        document.getElementById('q-num').innerText = this.cursor + 1;
+        document.getElementById('q-tot').innerText = tot;
+        document.getElementById('q-pct').innerText = pct + '%';
+        document.getElementById('q-num-label').innerText = 'Вопрос ' + (this.cursor + 1);
+        document.getElementById('fill-bar').style.width = pct + '%';
+        document.getElementById('q-text').innerText = item.q;
+        
+        const list = document.getElementById('opt-root'); 
+        list.innerHTML = '';
+        
+        item.opts.forEach((o, idx) => {
+            const row = document.createElement('div');
+            row.className = 'option' + (this.answers[this.cursor] === idx ? ' selected' : '');
+            row.innerHTML = `<div class="option-dot"></div><span class="option-letter">${LETTERS[idx]}</span><div class="option-text">${o.txt}</div>`;
+            row.onclick = () => { 
+                this.answers[this.cursor] = idx; 
+                this.saveProgress(); 
+                this.renderQ(); 
+            };
             list.appendChild(row);
         });
-        const isLast=this.cursor===tot-1;
-        document.getElementById('btn-prev').style.visibility=this.cursor===0?'hidden':'visible';
-        document.getElementById('btn-next').style.display=isLast?'none':'flex';
-        document.getElementById('btn-finish').style.display=isLast?'flex':'none';
-        document.getElementById('btn-giveup').style.display=isLast?'none':'flex';
+        
+        const isLast = this.cursor === tot - 1;
+        document.getElementById('btn-prev').style.visibility = this.cursor === 0 ? 'hidden' : 'visible';
+        document.getElementById('btn-next').style.display = isLast ? 'none' : 'flex';
+        document.getElementById('btn-finish').style.display = isLast ? 'flex' : 'none';
+        document.getElementById('btn-giveup').style.display = isLast ? 'none' : 'flex';
     },
     
-    next(){if(this.cursor<this.data.length-1){this.cursor++;this.saveProgress();this.renderQ();}},
-    prev(){if(this.cursor>0){this.cursor--;this.saveProgress();this.renderQ();}},
+    next() { if(this.cursor < this.data.length - 1) { this.cursor++; this.saveProgress(); this.renderQ(); } },
+    prev() { if(this.cursor > 0) { this.cursor--; this.saveProgress(); this.renderQ(); } },
     
-    goHomeSafe(){
-        if(Object.keys(this.answers).length>0){if(confirm("Выйти в меню? Прогресс сохранён."))this.goHome();}
-        else this.goHome();
+    goHomeSafe() {
+        if(Object.keys(this.answers).length > 0) { 
+            if(confirm("Выйти в меню? Прогресс сохранён.")) this.goHome(); 
+        } else this.goHome();
     },
     
-    finishEarly(){
-        const left=this.data.length-Object.keys(this.answers).length;
-        if(confirm(`Не отвечено: ${left} вопр.\nЗавершить и посмотреть итоги?`))this.finish();
+    finishEarly() {
+        const left = this.data.length - Object.keys(this.answers).length;
+        if(confirm(`Не отвечено: ${left} вопр.\nЗавершить и посмотреть итоги?`)) this.finish();
     },
     
-    finish(){
+    finish() {
         let ok = 0;
         const log = document.getElementById('res-log');
         log.innerHTML = '';
 
-        // Считаем статистику
         const allItems =[];
         this.data.forEach((item, i) => {
             const uIdx = this.answers[i];
@@ -621,7 +716,7 @@ const App={
         document.getElementById('res-text').innerText = `${ok} из ${this.data.length} верно`;
 
         const badge = document.getElementById('res-badge');
-        const [txt, bg, clr] = pct >= 90 ? ['🔥 Отличный результат', 'rgba(6,214,160,0.1)', 'var(--teal)'] :
+        const [txt, bg, clr] = pct >= 90 ?['🔥 Отличный результат', 'rgba(6,214,160,0.1)', 'var(--teal)'] :
             pct >= 70 ?['👍 Хороший результат', 'rgba(255,190,11,0.1)', '#9a7000'] :
             pct >= 50 ?['📚 Нужно подтянуть', 'rgba(255,190,11,0.08)', '#9a7000'] :['💪 Продолжай стараться', 'rgba(255,77,109,0.08)', 'var(--accent)'];
         badge.innerText = txt;
@@ -629,14 +724,13 @@ const App={
 
         if (!this.activeKey.startsWith('mix')) {
             const h = JSON.parse(localStorage.getItem('qz_history_recs')) || {};
-            if (pct > (h[this.activeKey] || 0)) {
-                h[this.activeKey] = pct;
+            if (pct > (h[this.activeRecordKey] || 0)) {
+                h[this.activeRecordKey] = pct;
                 localStorage.setItem('qz_history_recs', JSON.stringify(h));
             }
         }
 
-        // --- ИСПРАВЛЕННАЯ ПАГИНАЦИЯ ---
-        const PAGE_SIZE = 50; // Увеличил размер страницы до 50
+        const PAGE_SIZE = 50; 
         let currentPage = 0;
         const totalPages = Math.ceil(allItems.length / PAGE_SIZE);
 
@@ -687,7 +781,7 @@ const App={
                 currentPage--;
                 log.innerHTML = '';
                 renderPage(currentPage);
-                log.appendChild(paginationDiv); // ВОТ ОНО - возвращаем кнопки на место!
+                log.appendChild(paginationDiv); 
                 updateButtons();
                 log.scrollTop = 0;
             }
@@ -698,7 +792,7 @@ const App={
                 currentPage++;
                 log.innerHTML = '';
                 renderPage(currentPage);
-                log.appendChild(paginationDiv); // ВОТ ОНО - возвращаем кнопки на место!
+                log.appendChild(paginationDiv); 
                 updateButtons();
                 log.scrollTop = 0;
             }
@@ -719,13 +813,15 @@ const App={
         this.showScr('scr-res');
     },
     
-    goHome(){this.renderMenu();this.showScr('scr-home');},
-    showScr(id){
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    goHome() { this.renderMenu(); this.showScr('scr-home'); },
+    
+    showScr(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        if(id==='scr-res')document.getElementById('res-log').scrollTop=0;
+        if(id === 'scr-res') document.getElementById('res-log').scrollTop = 0;
     }
 };
+
 App.init();
 </script>
 </body>
