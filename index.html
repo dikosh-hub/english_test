@@ -461,15 +461,13 @@
     </div>
 
 </div>
-<script>
-const LETTERS = ['A','B','C','D','E','F'];
-const CHUNK_SIZE = 50; // Максимальное количество вопросов в одной части
+<script>const LETTERS = ['A','B','C','D','E','F'];
 
 const App = {
     data:[], cursor: 0, answers: {}, 
     activeKey: '', activeRecordKey: '', quizTitle: '',
     
-    mixEngKeys: ['history','grammar','phonetics','country','lexicology','business'],
+    mixEngKeys:['history','grammar','phonetics','country','lexicology','business'],
     mixKzKeys:['metodika','management','pedagogy','anatomy_cyber'],
     
     init() {
@@ -570,8 +568,11 @@ const App = {
             const total = item.data.length;
             const shortTitle = item.title.includes('(') ? item.title.split('(')[0].trim() : item.title;
             
+            // Дидактику делим по 60, остальные по 50
+            const chunkSize = (k === 'pedagogy') ? 60 : 50;
+            
             // Если вопросов мало, выводим одной кнопкой
-            if (total <= CHUNK_SIZE) {
+            if (total <= chunkSize) {
                 const sc = hist[k] || 0;
                 const pctColor = sc >= 80 ? 'var(--teal)' : sc >= 50 ? 'var(--gold)' : sc > 0 ? 'var(--accent)' : 'var(--muted)';
                 const el = document.createElement('div'); 
@@ -580,12 +581,12 @@ const App = {
                 el.onclick = () => this.start(k, undefined, shortTitle, k); 
                 root.appendChild(el);
             } 
-            // Если вопросов больше 50, бьем на части
+            // Если вопросов больше, бьем на части
             else {
-                const chunks = Math.ceil(total / CHUNK_SIZE);
+                const chunks = Math.ceil(total / chunkSize);
                 for (let i = 0; i < chunks; i++) {
-                    const startNum = i * CHUNK_SIZE + 1;
-                    const endNum = Math.min((i + 1) * CHUNK_SIZE, total);
+                    const startNum = i * chunkSize + 1;
+                    const endNum = Math.min((i + 1) * chunkSize, total);
                     const recordKey = `${k}_part_${i}`;
                     const sc = hist[recordKey] || 0;
                     const pctColor = sc >= 80 ? 'var(--teal)' : sc >= 50 ? 'var(--gold)' : sc > 0 ? 'var(--accent)' : 'var(--muted)';
@@ -614,21 +615,24 @@ const App = {
         
         let q =[];
         
+        // Дидактика по 60, остальные по 50
+        const chunkSize = (key === 'pedagogy') ? 60 : 50;
+        
         if(key === 'mix_eng') {
             this.quizTitle = 'MIX: ENGLISH';
             this.mixEngKeys.forEach(k => { if(QUESTIONS_DB[k]) q.push(...QUESTIONS_DB[k].data); });
-            q = this.shuffle(q).slice(0, CHUNK_SIZE); // Берем только 50 рандомных
+            q = this.shuffle(q).slice(0, 50); // Миксы всегда по 50 вопросов
         } 
         else if(key === 'mix_kz') {
             this.quizTitle = 'MIX: ПЕДАГОГИКА';
             this.mixKzKeys.forEach(k => { if(QUESTIONS_DB[k]) q.push(...QUESTIONS_DB[k].data); });
-            q = this.shuffle(q).slice(0, CHUNK_SIZE); // Берем только 50 рандомных
+            q = this.shuffle(q).slice(0, 50); // Миксы всегда по 50 вопросов
         } 
         else {
             this.quizTitle = title;
             q = QUESTIONS_DB[key].data;
             if (chunkIndex !== undefined) {
-                q = q.slice(chunkIndex * CHUNK_SIZE, (chunkIndex + 1) * CHUNK_SIZE);
+                q = q.slice(chunkIndex * chunkSize, (chunkIndex + 1) * chunkSize);
             }
         }
         
@@ -716,7 +720,7 @@ const App = {
         document.getElementById('res-text').innerText = `${ok} из ${this.data.length} верно`;
 
         const badge = document.getElementById('res-badge');
-        const [txt, bg, clr] = pct >= 90 ?['🔥 Отличный результат', 'rgba(6,214,160,0.1)', 'var(--teal)'] :
+        const[txt, bg, clr] = pct >= 90 ?['🔥 Отличный результат', 'rgba(6,214,160,0.1)', 'var(--teal)'] :
             pct >= 70 ?['👍 Хороший результат', 'rgba(255,190,11,0.1)', '#9a7000'] :
             pct >= 50 ?['📚 Нужно подтянуть', 'rgba(255,190,11,0.08)', '#9a7000'] :['💪 Продолжай стараться', 'rgba(255,77,109,0.08)', 'var(--accent)'];
         badge.innerText = txt;
@@ -730,7 +734,8 @@ const App = {
             }
         }
 
-        const PAGE_SIZE = 50; 
+        // Пагинация итогов (60 вопросов на страницу, чтобы часть влезала целиком)
+        const PAGE_SIZE = 60; 
         let currentPage = 0;
         const totalPages = Math.ceil(allItems.length / PAGE_SIZE);
 
@@ -741,7 +746,7 @@ const App = {
                 const item = allItems[i];
                 const div = document.createElement('div');
                 div.className = `review-item ${item.isRight ? 'good' : 'bad'}`;
-                div.style.animationDelay = `${(i - start) * 0.03}s`;
+                div.style.animationDelay = `${(i - start) * 0.02}s`;
                 if (!item.isRight) {
                     div.innerHTML = `<div class="review-q">${item.i+1}. ${item.q}</div>
                                      <div class="review-ans" style="color:var(--accent);text-decoration:line-through;">Вы: ${item.uTxt}</div>
@@ -823,6 +828,7 @@ const App = {
 };
 
 App.init();
+</script>
 </script>
 </body>
 </html>
